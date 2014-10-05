@@ -2,6 +2,14 @@ Some utilities for working ledgers in [hledger][].
 
 [hledger]: http://hledger.org/
 
+## Programs
+
+ledger-reconcile
+:   Reconcile a ledger with a Wells Fargo online banking CSV file.  It tries to pair up CSV entries with entries from the ledger matching a particular account name, printing out mismatched entries.
+
+ledger-list-accounts
+:   List all accounts in a ledger.
+
 ## License
 
 Copyright (c) 2014 Michael Ekstrand.
