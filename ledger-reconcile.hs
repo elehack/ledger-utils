@@ -17,6 +17,7 @@ import Hledger
 import Text.Printf
 
 data Invocation = Invocation { invQuery :: String
+                             , invFuzz :: Integer
                              , invMakeLedger :: Bool
                              , invFile :: FilePath }
                 deriving (Show, Data, Typeable)
@@ -25,6 +26,10 @@ invocation = Invocation{ invMakeLedger = def &= explicit
                                          &= name "make-ledger"
                                          &= name "L"
                                          &= help "Output ledger templates"
+                       , invFuzz = def &= explicit
+                                   &= name "fuzz"
+                                   &= name "z"
+                                   &= help "search window of Z days"
                        , invQuery = def &= argPos 0 &= typ "QUERY"
                        , invFile = def &= argPos 1 &= typ "FILE" }
              &= program "ledger-reconcile"
@@ -63,10 +68,11 @@ checkingLedger acct start = fmap filter defaultJournal
     query = And [Acct acct,
                  Date (DateSpan (Just start) Nothing)]
 
-reconcile :: [Posting]
+reconcile :: Integer
+          -> [Posting]
           -> [BankRecord]
           -> [ResultEntry]
-reconcile ledger bank = sortBy (comparing resultDate) $ scan [] ledger bank
+reconcile fuzz ledger bank = sortBy (comparing resultDate) $ scan [] ledger bank
   where
     scan :: [ResultEntry] -> [Posting] -> [BankRecord] -> [ResultEntry]
     scan results [] bs = map BankOnly bs ++ results
@@ -77,12 +83,17 @@ reconcile ledger bank = sortBy (comparing resultDate) $ scan [] ledger bank
         Nothing -> scan (LedgerOnly l : results) ls bs
     rmMatching acc l [] = Nothing
     rmMatching acc l (b:bs)
-      | pdollars l == rAmount b   = Just (b, reverse acc ++ bs)
-      | otherwise                 = rmMatching (b:acc) l bs
+      | l `matches` b = Just (b, reverse acc ++ bs)
+      | otherwise     = rmMatching (b:acc) l bs
+
+    matches l b = pdollars l == rAmount b && datesMatch fuzz l b
 
     pdollars = dollars . amounts . pamount
     dollars = maybe (usd 0) id
               . find ((==) "$" . acommodity)
+
+    datesMatch 0 _ _ = True
+    datesMatch z l b = abs (diffDays (rDay b) (postingDate l)) <= z
 
 pDescr :: Posting -> String
 pDescr p | pcomment p == "\n" = maybe "" tdescription $ ptransaction p
@@ -142,17 +153,25 @@ printLedgerEntry query (BankOnly b) = do
   putStrLn ""
 printLedgerEntry query _ = return ()
 
+-- filter out false positive due to fuzz
+filterEarly cutoff results = reverse $ dropWhile bogus $ reverse results
+  where
+    bogus (LedgerOnly p) = postingDate p < cutoff
+    bogus _ = False
+
 main :: IO ()
 main = do
   options <- cmdArgs invocation
+  let fuzz = invFuzz options
   let q = invQuery options
   let fn = invFile options
   records <- readBankRecords fn
   let minDate = minimum $ map rDay records
+  let fuzzDate = addDays (0 - fuzz) minDate
   whenLoud $ do
-    putStrLn ("Loading transactions since " ++ show minDate)
-  ledger <- checkingLedger q minDate
-  let results = reconcile ledger records
+    putStrLn ("Loading transactions since " ++ show fuzzDate)
+  ledger <- checkingLedger q fuzzDate
+  let results = filterEarly minDate $ reconcile fuzz ledger records
   let printer = if invMakeLedger options then printLedgerEntry q else printResult
   forM_ results printer
 
