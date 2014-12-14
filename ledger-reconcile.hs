@@ -145,11 +145,11 @@ printLedgerEntry query (BankOnly b) = do
   putStr $ formatTime defaultTimeLocale "%Y/%m/%d" $ rDay b
   putStr " "
   putStrLn $ rDescr b
-  putStr "  "
+  putStr "    "
   putStr query
   putStr "               "
   putStrLn $ showAmount $ rAmount b
-  putStrLn "  UNBAL"
+  putStrLn "    UNBAL"
   putStrLn ""
 printLedgerEntry query _ = return ()
 
