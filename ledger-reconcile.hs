@@ -39,10 +39,12 @@ invocation = Invocation{ invMakeLedger = def &= explicit
 data BankRecord = BankRecord { rDay :: Day,
                                rAmount :: Amount,
                                rDescr :: String }
+                               deriving Show
 
 data ResultEntry = Matched Posting BankRecord
                  | LedgerOnly Posting
                  | BankOnly BankRecord
+                 deriving Show
 
 resultDate (Matched p b) = min (postingDate p) (rDay b)
 resultDate (LedgerOnly p) = postingDate p
@@ -154,9 +156,9 @@ printLedgerEntry query (BankOnly b) = do
 printLedgerEntry query _ = return ()
 
 -- filter out false positive due to fuzz
-filterEarly cutoff results = reverse $ dropWhile bogus $ reverse results
+filterEarly cutoff results = dropWhile bogus results
   where
-    bogus (LedgerOnly p) = postingDate p < cutoff
+    bogus (LedgerOnly p) = postingDate p <= cutoff
     bogus _ = False
 
 main :: IO ()
@@ -171,7 +173,8 @@ main = do
   whenLoud $ do
     putStrLn ("Loading transactions since " ++ show fuzzDate)
   ledger <- checkingLedger q fuzzDate
-  let results = filterEarly minDate $ reconcile fuzz ledger records
+  let allResults = reconcile fuzz ledger records
+  let results = filterEarly minDate allResults
   let printer = if invMakeLedger options then printLedgerEntry q else printResult
   forM_ results printer
 
