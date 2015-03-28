@@ -89,7 +89,7 @@ reconcile fuzz ledger bank = sortBy (comparing resultDate) $ scan [] ledger bank
       | l `matches` b = Just (b, reverse acc ++ bs)
       | otherwise     = rmMatching (b:acc) l bs
 
-    matches l b = pdollars l == rAmount b && datesMatch fuzz l b
+    matches l b = (aquantity $ pdollars l) == (aquantity $ rAmount b) && datesMatch fuzz l b
 
     pdollars = dollars . amounts . pamount
     dollars = maybe (usd 0) id
