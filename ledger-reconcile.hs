@@ -3,6 +3,7 @@ import Data.Time
 import Data.List
 import Data.Ord
 import Data.Monoid
+import Data.String (fromString)
 import Control.Applicative
 import Control.Monad
 import System.Environment
@@ -10,7 +11,7 @@ import System.Locale (defaultTimeLocale)
 
 import System.Console.CmdArgs
 import System.Console.CmdArgs.Verbosity
-import qualified System.Console.Rainbow as Term
+import qualified Rainbow as Term
 
 import Text.CSV
 import Hledger
@@ -103,7 +104,7 @@ pDescr p | pcomment p == "\n" = maybe "" tdescription $ ptransaction p
 
 printResult :: ResultEntry -> IO ()
 printResult x = maybePrint x $ do
-  Term.putChunkLn $ (Term.fromString $ display x) <> color x
+  Term.putChunkLn $ (fromString $ display x) <> color x
   where
     display :: ResultEntry -> String
     display x = printf "%s %s %12s  %s"
@@ -118,11 +119,11 @@ printResult x = maybePrint x $ do
     maybePrint _ = id
 
     color :: ResultEntry -> Term.Chunk
-    color (Matched p b) | postingCleared p = Term.f_green
+    color (Matched p b) | postingCleared p = Term.fore Term.green8
                         | otherwise = Term.bold
-    color (LedgerOnly p) | postingCleared p = Term.f_red <> Term.bold
-                         | otherwise = Term.f_white
-    color (BankOnly b) = Term.f_yellow
+    color (LedgerOnly p) | postingCleared p = Term.fore Term.red8 <> Term.bold
+                         | otherwise = Term.fore Term.white8
+    color (BankOnly b) = Term.fore Term.yellow8
     
     date (Matched p b) = postingDate p
     date (LedgerOnly p) = postingDate p

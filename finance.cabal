@@ -16,20 +16,19 @@ cabal-version:       >=1.8
 
 executable ledger-reconcile
   main-is:             ledger-reconcile.hs
-  build-depends:       base ==4.6.*,
+  build-depends:       base >= 4.6,
                        hledger-lib >= 0.22,
                        csv >= 0.1.2,
                        old-locale,
                        time >= 1.4,
                        cmdargs,
-                       rainbow >= 0.6
+                       rainbow >= 0.22
 
 executable ledger-list-accounts
   main-is:             ledger-list-accounts.hs
-  build-depends:       base ==4.6.*,
+  build-depends:       base >= 4.6,
                        hledger-lib >= 0.22,
                        csv >= 0.1.2,
                        old-locale,
                        time >= 1.4,
-                       cmdargs,
-                       rainbow >= 0.6
+                       cmdargs
